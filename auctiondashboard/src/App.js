@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { teams, players as initialPlayers } from './data';
 import fblLogo from './fbl-logo.png';
 
-const AUCTION_AMOUNT = 75000;
+const AUCTION_AMOUNT = 84000;
 const MAX_PLAYERS_PER_TEAM = 6;
 const BASE_PRICES = {
   'Int': 5000,
