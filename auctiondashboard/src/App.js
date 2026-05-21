@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { teams, players as initialPlayers } from './data';
 import fblLogo from './fbl-logo.png';
 
-const AUCTION_AMOUNT = 75000;
+const AUCTION_AMOUNT = 84000;
 const MAX_PLAYERS_PER_TEAM = 6;
 const BASE_PRICES = {
   'Int': 5000,
@@ -206,12 +206,12 @@ function App() {
               return (
                 <div key={team.id} style={{ minWidth: 180, border: '2px solid #fff', borderRadius: 12, padding: 14, background: color, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                   <strong style={{ fontSize: 20 }}>{team.name}</strong><br />
-                  <span>Total Auction Amount: ₹{AUCTION_AMOUNT}</span><br />
-                  <span>Players: {stats.count} / {MAX_PLAYERS_PER_TEAM}</span><br />
-                  <span>Amount Left: ₹{stats.left}</span><br />
-                  <span>Intermediate Players: {intermediateCount}</span><br />
-                  <span>Advance Players: {advanceCount}</span><br />
-                  <span>Women Players: {womenCount}</span>
+                  <span>💰 Total Auction Amount: ₹{AUCTION_AMOUNT}</span><br />
+                  <span>👥 Players: {stats.count} / {MAX_PLAYERS_PER_TEAM}</span><br />
+                  <span>💸 Amount Left: ₹{stats.left}</span><br />
+                  <span>🟡 Intermediate Players: {intermediateCount}</span><br />
+                  <span>🚀 Advance Players: {advanceCount}</span><br />
+                  <span>♀️ Women Players: {womenCount}</span>
                   <ul style={{ marginTop: 8 }}>
                     {teamPlayers.map(p => (
                       <li key={p.id} style={{ color: '#fff', fontWeight: 'bold' }}>{p.name} (₹{p.soldPrice || BASE_PRICES[p.category]})</li>
@@ -232,12 +232,12 @@ function App() {
               return (
                 <div key={team.id} style={{ minWidth: 180, border: '2px solid #fff', borderRadius: 12, padding: 14, background: color, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                   <strong style={{ fontSize: 20 }}>{team.name}</strong><br />
-                  <span>Total Auction Amount: ₹{AUCTION_AMOUNT}</span><br />
-                  <span>Players: {stats.count} / {MAX_PLAYERS_PER_TEAM}</span><br />
-                  <span>Amount Left: ₹{stats.left}</span><br />
-                  <span>Intermediate Players: {intermediateCount}</span><br />
-                  <span>Advance Players: {advanceCount}</span><br />
-                  <span>Women Players: {womenCount}</span>
+                  <span>💰 Total Auction Amount: ₹{AUCTION_AMOUNT}</span><br />
+                  <span>👥 Players: {stats.count} / {MAX_PLAYERS_PER_TEAM}</span><br />
+                  <span>💸 Amount Left: ₹{stats.left}</span><br />
+                  <span>🟡 Intermediate Players: {intermediateCount}</span><br />
+                  <span>🚀 Advance Players: {advanceCount}</span><br />
+                  <span>♀️ Women Players: {womenCount}</span>
                   <ul style={{ marginTop: 8 }}>
                     {teamPlayers.map(p => (
                       <li key={p.id} style={{ color: '#fff', fontWeight: 'bold' }}>{p.name} (₹{p.soldPrice || BASE_PRICES[p.category]})</li>
