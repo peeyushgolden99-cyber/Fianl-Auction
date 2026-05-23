@@ -1,28 +1,61 @@
 // ...existing code...
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { teams, players as initialPlayers } from './data';
-import fblLogo from './fbl-logo.png';
 
 const AUCTION_AMOUNT = 84000;
 const MAX_PLAYERS_PER_TEAM = 6;
 const BASE_PRICES = {
-  'Int': 5000,
-  'Int+': 7500,
-  'ADV': 10000,
+  'Int': 4000,
+  'Int+': 6000,
+  'ADV': 9000,
   'ADV+': 12500
 };
+
 
 function App() {
   const [players, setPlayers] = useState(initialPlayers);
   const [soldPrice, setSoldPrice] = useState('');
   const [skippedIds, setSkippedIds] = useState([]);
   const [auctionTab, setAuctionTab] = useState('INT');
+  const [timeLeft, setTimeLeft] = useState(300);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const initialPlayersKey = JSON.stringify(initialPlayers);
+
+  useEffect(() => {
+    setPlayers(initialPlayers);
+  }, [initialPlayersKey]);
+
+  useEffect(() => {
+    if (!timerRunning) return undefined;
+    if (timeLeft <= 0) {
+      setTimerRunning(false);
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => Math.max(prev - 1, 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerRunning, timeLeft]);
+
+  const formatTime = seconds => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
+
+  const resetTimer = () => {
+    setTimeLeft(300);
+    setTimerRunning(false);
+  };
 
   // Filter unsold/unassigned players for each tab
-  const unsoldPlayersINT = players.filter(p => !p.teamId && (p.category === 'Int' || p.category === 'Int+') && !(p.gender && (p.gender.toLowerCase() === 'female' || p.gender.toLowerCase() === 'w')));
-  const unsoldPlayersADV = players.filter(p => !p.teamId && (p.category === 'ADV' || p.category === 'ADV+') && !(p.gender && (p.gender.toLowerCase() === 'female' || p.gender.toLowerCase() === 'w')));
-  const unsoldPlayersWOMEN = players.filter(p => !p.teamId && (p.gender && (p.gender.toLowerCase() === 'female' || p.gender.toLowerCase() === 'w')));
+  const unsoldPlayersINT = players.filter(p => p.teamId !== 0 && !p.teamId && (p.category === 'Int' || p.category === 'Int+') && !(p.gender && (p.gender.toLowerCase() === 'female' || p.gender.toLowerCase() === 'w')));
+  const unsoldPlayersADV = players.filter(p => p.teamId !== 0 && !p.teamId && (p.category === 'ADV' || p.category === 'ADV+') && !(p.gender && (p.gender.toLowerCase() === 'female' || p.gender.toLowerCase() === 'w')));
+  const unsoldPlayersWOMEN = players.filter(p => p.teamId !== 0 && !p.teamId && (p.gender && (p.gender.toLowerCase() === 'female' || p.gender.toLowerCase() === 'w')));
+  const notAssignedPlayers = players.filter(p => p.teamId === 0);
 
   // Get next player for current tab
   const getNextTabPlayer = () => {
@@ -30,6 +63,7 @@ function App() {
     if (auctionTab === 'INT') pool = unsoldPlayersINT;
     else if (auctionTab === 'ADV') pool = unsoldPlayersADV;
     else if (auctionTab === 'WOMEN') pool = unsoldPlayersWOMEN;
+    else if (auctionTab === 'UNASSIGNED') pool = notAssignedPlayers;
     return pool.length > 0 ? pool[0] : null;
   };
   const nextTabPlayer = getNextTabPlayer();
@@ -45,6 +79,8 @@ function App() {
     };
   };
 
+
+
   const [selectedTeamId, setSelectedTeamId] = useState('');
 
   const submitPlayerUpdate = () => {
@@ -57,17 +93,22 @@ function App() {
       alert('Please enter a valid sold price (at least base price).');
       return;
     }
-    const stats = getTeamStats(Number(selectedTeamId));
-    if (stats.count >= MAX_PLAYERS_PER_TEAM) {
-      alert('This team already has 6 players!');
-      return;
+
+    const isUnassigned = selectedTeamId === 'UNASSIGNED';
+    if (!isUnassigned) {
+      const stats = getTeamStats(Number(selectedTeamId));
+      if (stats.count >= MAX_PLAYERS_PER_TEAM) {
+        alert('This team already has 6 players!');
+        return;
+      }
+      if (stats.left < Number(soldPrice)) {
+        alert('This team does not have enough auction amount left.');
+        return;
+      }
     }
-    if (stats.left < Number(soldPrice)) {
-      alert('This team does not have enough auction amount left.');
-      return;
-    }
+
     setPlayers(players.map(p =>
-      p.id === nextUnassignedPlayer.id ? { ...p, teamId: Number(selectedTeamId), soldPrice: Number(soldPrice) } : p
+      p.id === nextUnassignedPlayer.id ? { ...p, teamId: isUnassigned ? 0 : Number(selectedTeamId), soldPrice: Number(soldPrice) } : p
     ));
     setSoldPrice('');
     setSelectedTeamId('');
@@ -137,11 +178,26 @@ function App() {
         {/* Left: Auction tile + Categories + Next player (35%) */}
         <div style={{ flex: '0 0 35%', maxWidth: '35%' }}>
           <h1 style={{ color: '#283593', fontWeight: 'bold', fontSize: 32, marginBottom: 20 }}>FBL Team's Tournament Auction Dashboard</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 24, gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ fontSize: 48, fontWeight: 800, color: '#d32f2f', lineHeight: 1 }}>{formatTime(timeLeft)}</div>
+              <div>
+                <div style={{ color: '#1976d2', fontSize: 14, fontWeight: 700, letterSpacing: 1.2 }}>AUCTION TIMER</div>
+                <div style={{ color: timerRunning ? '#388e3c' : '#757575', fontSize: 14 }}>{timerRunning ? 'Live now' : timeLeft === 0 ? 'Auction ended' : 'Paused'}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setTimerRunning(true)} style={{ padding: '8px 16px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>Start</button>
+              <button onClick={() => setTimerRunning(false)} style={{ padding: '8px 16px', background: '#757575', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>Pause</button>
+              <button onClick={resetTimer} style={{ padding: '8px 16px', background: '#0288d1', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>Reset</button>
+            </div>
+          </div>
           {/* Auction Tabs and Player Window */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <button onClick={() => setAuctionTab('INT')} style={{ padding: '8px 24px', background: auctionTab === 'INT' ? '#1976d2' : '#e0e0e0', color: auctionTab === 'INT' ? '#fff' : '#333', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>INT & INT+</button>
             <button onClick={() => setAuctionTab('ADV')} style={{ padding: '8px 24px', background: auctionTab === 'ADV' ? '#1976d2' : '#e0e0e0', color: auctionTab === 'ADV' ? '#fff' : '#333', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>ADV & ADV+</button>
             <button onClick={() => setAuctionTab('WOMEN')} style={{ padding: '8px 24px', background: auctionTab === 'WOMEN' ? '#1976d2' : '#e0e0e0', color: auctionTab === 'WOMEN' ? '#fff' : '#333', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>Women Players</button>
+            <button onClick={() => setAuctionTab('UNASSIGNED')} style={{ padding: '8px 24px', background: auctionTab === 'UNASSIGNED' ? '#1976d2' : '#e0e0e0', color: auctionTab === 'UNASSIGNED' ? '#fff' : '#333', border: 'none', borderRadius: 8, fontWeight: 'bold' }}>Not Assigned</button>
           </div>
           <h2 style={{ color: '#1976d2' }}>Next Player for Auction</h2>
           {nextUnassignedPlayer ? (
@@ -169,7 +225,8 @@ function App() {
                   value={selectedTeamId}
                   onChange={e => setSelectedTeamId(e.target.value)}
                 >
-                  <option value="" disabled>Not assigned to any team</option>
+                  <option value="" disabled>Select team or mark Not Assigned</option>
+                  <option value="UNASSIGNED">Not assigned to any team</option>
                   {teams.map(team => {
                     const stats = getTeamStats(team.id);
                     const price = soldPrice ? Number(soldPrice) : BASE_PRICES[nextUnassignedPlayer.category];
@@ -214,7 +271,12 @@ function App() {
                   <span>♀️ Women Players: {womenCount}</span>
                   <ul style={{ marginTop: 8 }}>
                     {teamPlayers.map(p => (
-                      <li key={p.id} style={{ color: '#fff', fontWeight: 'bold' }}>{p.name} (₹{p.soldPrice || BASE_PRICES[p.category]})</li>
+                      <li key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', fontWeight: 'bold' }}>
+                        <span>{p.name} (₹{p.soldPrice || BASE_PRICES[p.category]})</span>
+                        {p.teamId && (
+                          <span style={{ padding: '3px 8px', borderRadius: 12, background: 'linear-gradient(135deg, #ff8a65, #ff5252)', color: '#fff', fontSize: 12, fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.18)' }}>SOLD</span>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -240,7 +302,12 @@ function App() {
                   <span>♀️ Women Players: {womenCount}</span>
                   <ul style={{ marginTop: 8 }}>
                     {teamPlayers.map(p => (
-                      <li key={p.id} style={{ color: '#fff', fontWeight: 'bold' }}>{p.name} (₹{p.soldPrice || BASE_PRICES[p.category]})</li>
+                      <li key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', fontWeight: 'bold' }}>
+                        <span>{p.name} (₹{p.soldPrice || BASE_PRICES[p.category]})</span>
+                        {p.teamId && (
+                          <span style={{ padding: '3px 8px', borderRadius: 12, background: 'linear-gradient(135deg, #ff8a65, #ff5252)', color: '#fff', fontSize: 12, fontWeight: 700, boxShadow: '0 2px 6px rgba(0,0,0,0.18)' }}>SOLD</span>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </div>
